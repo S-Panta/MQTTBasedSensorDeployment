@@ -1,4 +1,4 @@
-## Adaptive Sampling For Environmental Monitoring Network using MQTT
+## Adaptive Sampling For Environmental Monitoring Network using MQTT as network protocol
 This repository contains hardware and software design for deploying the environmental monitoring wireless sensor nodes using MQTT as the communication protocol. Under MQTT pub/sub architecture, there are mainly three components: 
 - Publisher: The client that publish data to the server on topics. Here, topic has same idea to URL for web services.
 - Broker: The central server that routes the message from Publisher to Subscriber.
