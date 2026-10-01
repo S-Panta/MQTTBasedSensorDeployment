@@ -1,0 +1,24 @@
+1790842498: mosquitto version 2.1.2 starting
+1790842498: Config loaded from /mosquitto/config/mosquitto.conf.
+1790842498: Bridge support available.
+1790842498: Persistence support available.
+1790842498: TLS support available.
+1790842498: TLS-PSK support available.
+1790842498: Websockets support available.
+1790842498: Opening ipv4 listen socket on port 1883.
+1790842498: Opening ipv6 listen socket on port 1883.
+1790842498: mosquitto version 2.1.2 running
+1790842519: mosquitto version 2.1.2 terminating
+1790842519: Saving in-memory database to /mosquitto//mosquitto.db.
+2026-10-01T08:15:26: mosquitto version 2.1.2 starting
+2026-10-01T08:15:26: Config loaded from /mosquitto/config/mosquitto.conf.
+2026-10-01T08:15:26: Bridge support available.
+2026-10-01T08:15:26: Persistence support available.
+2026-10-01T08:15:26: TLS support available.
+2026-10-01T08:15:26: TLS-PSK support available.
+2026-10-01T08:15:26: Websockets support available.
+2026-10-01T08:15:26: Opening ipv4 listen socket on port 1883.
+2026-10-01T08:15:26: Opening ipv6 listen socket on port 1883.
+2026-10-01T08:15:26: mosquitto version 2.1.2 running
+2026-10-01T08:25:05: mosquitto version 2.1.2 terminating
+2026-10-01T08:25:05: Saving in-memory database to /mosquitto//mosquitto.db.

@@ -1,0 +1,4 @@
+.env
+*/*.env
+*.env
+services/mosquitto/mosquitto.log
