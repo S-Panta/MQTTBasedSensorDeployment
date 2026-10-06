@@ -11,25 +11,15 @@ services:
       - 1883:1883
 
   hsmqttbridge:
-    image: mqtt_bridge:latest
-    container_name: mqtt_bridge
+    image: sabinpanta/hsmqttbridge:latest
+    container_name: hsmqttbridge
     env_file:
       - ./hsmqttbridge/.env
     depends_on: [ mosquitto ]
     restart: unless-stopped
-    environment:
-      HYDROSERVER_URL: ${HYDROSERVER_URL}
-      WORKSPACE_API_KEY: ${WORKSPACE_API_KEY}
-      MQTT_BROKER_URL: ${MQTT_BROKER_URL}
-      MQTT_TOPIC_FILTER: ${MQTT_TOPIC_FILTER}
-      DB_PATH: ${DB_PATH}
-      LOG_LEVEL: ${LOG_LEVEL}
-      MAX_RETRY_ATTEMPT: ${MAX_RETRY_ATTEMPT}
-      RETRY_INTERVAL: ${RETRY_INTERVAL}
-
     volumes:
-      - ${PWD}/hsmqttbridge/data:/app/data
-
-  sqlite-web:
-    image: ghcr.io/coleifer/sqlite-web:latest
-    restart: unless-stopped
+      - ${PWD}/hsmqttbridge/data:/hsmqttbridge/data
+      - ${PWD}/hsmqttbridge/.env:/hsmqttbridge/.env
+  # sqlite-web:
+  #   image: ghcr.io/coleifer/sqlite-web:latest
+  #   restart: unless-stopped
