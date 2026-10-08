@@ -1,0 +1,1 @@
+For local instance of Hydroserver setup run `./setup.sh`
