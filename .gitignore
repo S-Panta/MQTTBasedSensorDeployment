@@ -3,4 +3,4 @@
 *.env
 services/mosquitto/mosquitto.log
 services/hydroserver/hydroserver
-hsmqttbridge/data
+services/hsmqttbridge/data/
