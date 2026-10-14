@@ -1,0 +1,185 @@
+'===========================================================
+' CR350 - DTS-12 Turbidity + CS451 Pressure Transducer
+' Measures, stores and publishes every 15 minutes to MQTT
+' as SensorThings Observation JSON payloads
+'
+' DTS-12: SDI-12 address 0, aM2! (wipe + measure)
+' CS451 : SDI-12 address 1, aM8! (configured for cm, degC,
+'         20-sample average via aXCONFIG1=0,4,100,0! and
+'         aXCONFIG2=20! - see CS451 manual)
+'===========================================================
+
+SequentialMode
+
+'-----------------------------------------------------------
+' Station settings (editable without recompiling)
+'-----------------------------------------------------------
+ConstTable
+  'SDI-12 ports and addresses
+  Const DTS12Port = 1
+  Const DTS12Adrs = 0
+  Const CS451Port = 1
+  Const CS451Adrs = 1
+  'Number of CS451 retries if it returns NAN
+  Const PTMaxRetries = 3
+EndConstTable
+
+'-----------------------------------------------------------
+' Station health
+'-----------------------------------------------------------
+Public Site As String * 16
+Public BattVolt
+Public Panel_Temp
+
+Units BattVolt = V
+Units Panel_Temp = degC
+
+'-----------------------------------------------------------
+' DTS-12 measurements
+'-----------------------------------------------------------
+Public DTS12_Data(8)
+Alias DTS12_Data(1) = Turb_Mean
+Alias DTS12_Data(2) = Turb_Variance
+Alias DTS12_Data(3) = Turb_Median
+Alias DTS12_Data(4) = Turb_BES
+Alias DTS12_Data(5) = Turb_Min
+Alias DTS12_Data(6) = Turb_Max
+Alias DTS12_Data(7) = DTS12_Water_Temp
+Alias DTS12_Data(8) = Wipe_Status
+
+Units Turb_Mean = NTU
+Units Turb_Variance = NTU
+Units Turb_Median = NTU
+Units Turb_BES = NTU
+Units Turb_Min = NTU
+Units Turb_Max = NTU
+Units DTS12_Water_Temp = degC
+
+'-----------------------------------------------------------
+' CS451 measurements
+'-----------------------------------------------------------
+Public CS451_Data(2)
+Alias CS451_Data(1) = Stage_cm
+Alias CS451_Data(2) = CS451_Water_Temp
+
+Public StageNaNCounter As Long
+
+Units Stage_cm = cm
+Units CS451_Water_Temp = degC
+
+Dim PT_i As Long
+
+'-----------------------------------------------------------
+' MQTT topics and SensorThings Datastream IDs (CR350)
+'-----------------------------------------------------------
+Const N_OBS = 8
+
+Const TURB_MEAN_DATASTREAM_ID As String = "01a136fc-527c-7fc1-a588-27493d61c79c"
+Const TURB_VARIANCE_DATASTREAM_ID As String = "01a13705-0d84-7505-b0c5-0255fbed7e69"
+Const TURB_MEDIAN_DATASTREAM_ID As String = "01a136f9-c236-781a-9388-d2ffd36943bc"
+Const TURB_BES_DATASTREAM_ID As String = "01a136fd-dbdb-7317-bab1-d0af9194cdfc"
+Const TURB_MIN_DATASTREAM_ID As String = "01a13706-eedd-7b9a-88bb-03aa0d05f8c8"
+Const TURB_MAX_DATASTREAM_ID As String = "01a13706-17e7-7743-a9ae-14836fce4cfc"
+Const GAGE_HEIGHT_DATASTREAM_ID As String = "01a136f6-f1f4-75b2-a801-f384b3570144"
+Const WATER_TEMP_DATASTREAM_ID As String = "01a13709-6a84-7025-b8ce-7b79f21822a6"
+
+Public Topic(N_OBS) As String * 64
+Public DatastreamID(N_OBS) As String * 64
+Public ObsValue(N_OBS)
+
+Public dateTime As String * 30
+Public payload As String * 200
+Dim i As Long
+
+'-----------------------------------------------------------
+' Data Table (one record every 15 minutes)
+'-----------------------------------------------------------
+DataTable(Station_Log, True, -1)
+  DataInterval(0, 15, Min, 10)
+  Sample(1, Site, String)
+  Sample(1, BattVolt, FP2)
+  Sample(1, Panel_Temp, FP2)
+  'DTS-12
+  Sample(8, DTS12_Data(), FP2)
+  'CS451
+  Sample(1, Round(Stage_cm, 2), IEEE4)
+  FieldNames("Stage_cm")
+  Sample(1, Round(CS451_Water_Temp, 2), FP2)
+  FieldNames("CS451_Water_Temp")
+  Sample(1, StageNaNCounter, FP2)
+EndTable
+
+'-----------------------------------------------------------
+' Subroutine: MeasurePT
+' Reads the CS451 (stage in cm), retrying up to PTMaxRetries
+' times if it returns NAN
+'-----------------------------------------------------------
+Sub MeasurePT
+  StageNaNCounter = 0
+
+  For PT_i = 1 To PTMaxRetries
+    SDI12Recorder(CS451_Data(), CS451Port, CS451Adrs, "M8!", 1.0, 0)
+    If Stage_cm = NAN Then
+      StageNaNCounter += 1
+    Else
+      ExitFor
+    EndIf
+  Next PT_i
+EndSub
+
+'-----------------------------------------------------------
+' Main Program
+'-----------------------------------------------------------
+BeginProg
+
+  'Station name from the Status table (set it in Device Configuration)
+  Site = Status.StationName
+
+  'Topic / Datastream lookup tables (index order matches ObsValue)
+  Topic(1) = "uwrl/" + Site + "/dts12/turbmean"     : DatastreamID(1) = TURB_MEAN_DATASTREAM_ID
+  Topic(2) = "uwrl/" + Site + "/dts12/turbvariance" : DatastreamID(2) = TURB_VARIANCE_DATASTREAM_ID
+  Topic(3) = "uwrl/" + Site + "/dts12/turbmedian"   : DatastreamID(3) = TURB_MEDIAN_DATASTREAM_ID
+  Topic(4) = "uwrl/" + Site + "/dts12/turbbes"      : DatastreamID(4) = TURB_BES_DATASTREAM_ID
+  Topic(5) = "uwrl/" + Site + "/dts12/turbmin"      : DatastreamID(5) = TURB_MIN_DATASTREAM_ID
+  Topic(6) = "uwrl/" + Site + "/dts12/turbmax"      : DatastreamID(6) = TURB_MAX_DATASTREAM_ID
+  Topic(7) = "uwrl/" + Site + "/cs451/gageheight"   : DatastreamID(7) = GAGE_HEIGHT_DATASTREAM_ID
+  Topic(8) = "uwrl/" + Site + "/cs451/watertemp"    : DatastreamID(8) = WATER_TEMP_DATASTREAM_ID
+
+  'Scan runs at :00, :15, :30, :45 (scans sync to the logger clock)
+  Scan(15, Min, 1, 0)
+
+    'Station health
+    Battery(BattVolt)
+    PanelTemp(Panel_Temp, 60)
+
+    'DTS-12: wipe + measure
+    SDI12Recorder(DTS12_Data(), DTS12Port, DTS12Adrs, "M2!", 1.0, 0)
+
+    'CS451: stage in cm with NAN retries
+    Call MeasurePT
+
+    'Store data
+    CallTable Station_Log
+    dateTime = Station_Log.Timestamp(4,1)
+
+    'Values to publish (same order as Topic/DatastreamID)
+    ObsValue(1) = Turb_Mean
+    ObsValue(2) = Turb_Variance
+    ObsValue(3) = Turb_Median
+    ObsValue(4) = Turb_BES
+    ObsValue(5) = Turb_Min
+    ObsValue(6) = Turb_Max
+    ObsValue(7) = Stage_cm
+    ObsValue(8) = CS451_Water_Temp
+
+    'Build and publish one SensorThings Observation per variable
+    For i = 1 To N_OBS
+      If ObsValue(i) <> NAN Then
+        Sprintf(payload, "{""result"":%.3f,""phenomenonTime"":""%s"",""Datastream"":{""@iot.id"":""%s""}}", ObsValue(i), dateTime, DatastreamID(i))
+        MQTTPublish(Topic(i), payload, 0, 0)
+      EndIf
+    Next i
+
+  NextScan
+
+EndProg

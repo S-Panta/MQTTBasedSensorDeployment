@@ -1,0 +1,30 @@
+{
+    "Gage height at uwrl measured by CS451 with Mayfly": "01a136f6-3387-7eca-b22f-69ce4557dff1",
+    "Gage height at uwrl measured by CS451 with CR350": "01a136f6-f1f4-75b2-a801-f384b3570144",
+    "Median Turbidity at uwrl measured by DTS12 with CR350": "01a136f9-c236-781a-9388-d2ffd36943bc",
+    "Median Turbidity at uwrl measured by DTS12 with Mayfly": "01a136fa-33c0-7cde-a1fb-4213a9451acf",
+    "Average Turbidity at uwrl measured by DTS12 with CR350": "01a136fc-527c-7fc1-a588-27493d61c79c",
+    "Average Turbidity at uwrl measured by DTS12 with Mayfly": "01a136fc-9f31-7f1d-93c5-3ea786c3dc9e",
+    "BES Turbidity at uwrl measured by DTS12 with CR350": "01a136fd-dbdb-7317-bab1-d0af9194cdfc",
+    "BES Turbidity at uwrl measured by DTS12 with Mayfly": "01a136fe-3b40-778f-b8b0-c96cf50c5c95",
+    "Turbidity variance at uwrl measured by DTS12 with Mayfly": "01a13704-a23e-7dd0-9ac5-ab5ff13bd6d1",
+    "Turbidity variance at uwrl measured by DTS12 with CR350": "01a13705-0d84-7505-b0c5-0255fbed7e69",
+    "Maximum Turbidity at uwrl measured by DTS12 with CR350": "01a13706-17e7-7743-a9ae-14836fce4cfc",
+    "Maximum Turbidity at uwrl measured by DTS12 with Mayfly": "01a13706-6291-73cf-9d31-f99b79de8747",
+    "Minimum Turbidity at uwrl measured by DTS12 with Mayfly": "01a13706-ba9d-703d-bf2c-ef168763b106",
+    "Minimum Turbidity at uwrl measured by DTS12 with CR350": "01a13706-eedd-7b9a-88bb-03aa0d05f8c8",
+    "Water temperature at uwrl measured by CS451 with Mayfly": "01a13708-db93-70d5-ab36-e4c0ace6925e",
+    "Water temperature at uwrl measured by CS451 with CR350": "01a13709-6a84-7025-b8ce-7b79f21822a6"
+}
+
+
+{
+    "Gage height at uwrl measured by CS451 with CR350": "01a136f6-f1f4-75b2-a801-f384b3570144",
+    "Median Turbidity at uwrl measured by DTS12 with CR350": "01a136f9-c236-781a-9388-d2ffd36943bc",
+    "Average Turbidity at uwrl measured by DTS12 with CR350": "01a136fc-527c-7fc1-a588-27493d61c79c",
+    "BES Turbidity at uwrl measured by DTS12 with CR350": "01a136fd-dbdb-7317-bab1-d0af9194cdfc",
+    "Turbidity variance at uwrl measured by DTS12 with CR350": "01a13705-0d84-7505-b0c5-0255fbed7e69",
+    "Maximum Turbidity at uwrl measured by DTS12 with CR350": "01a13706-17e7-7743-a9ae-14836fce4cfc",
+    "Minimum Turbidity at uwrl measured by DTS12 with CR350": "01a13706-eedd-7b9a-88bb-03aa0d05f8c8",
+    "Water temperature at uwrl measured by CS451 with CR350": "01a13709-6a84-7025-b8ce-7b79f21822a6"
+}
