@@ -23,7 +23,7 @@ const int8_t sensorPowerPin = 22;
 
 const char *wifiId = "USU-guest";
 const char *wifiPwd = 0;
-const char *MQTT_BROKER = "144.39.51.28";
+const char *MQTT_BROKER = "144.39.174.90";
 const int32_t modemBaud = 57600;
 
 ExpressifESP32 esp32(XbeeSerial, XBEE_PWR);
