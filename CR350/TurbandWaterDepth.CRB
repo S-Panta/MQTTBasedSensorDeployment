@@ -1,12 +1,16 @@
 '===========================================================
-' CR350 - DTS-12 Turbidity + CS451 Pressure Transducer
+' DTS-12 and CS451 sensors attached to a CR350
 ' Measures, stores and publishes every 15 minutes to MQTT
 ' as SensorThings Observation JSON payloads
 '
-' DTS-12: SDI-12 address 0, aM2! (wipe + measure)
+' DTS-12: SDI-12 address 0, aM2! command (wipe and measure)
 ' CS451 : SDI-12 address 1, aM8! (configured for cm, degC,
 '         20-sample average via aXCONFIG1=0,4,100,0! and
 '         aXCONFIG2=20! - see CS451 manual)
+' Battery voltage: logger internal battery measurement
+'
+' MQTT topic format: {site}/{device}/{sensor}/{variable}
+'   e.g. uwrl/cr350/dts12/medianturbidity
 '===========================================================
 
 SequentialMode
@@ -15,19 +19,37 @@ SequentialMode
 ' Station settings (editable without recompiling)
 '-----------------------------------------------------------
 ConstTable
-  'SDI-12 ports and addresses
-  Const DTS12Port = 1
-  Const DTS12Adrs = 0
-  Const CS451Port = 1
-  Const CS451Adrs = 1
-  'Number of CS451 retries if it returns NAN
-  Const PTMaxRetries = 3
+'SDI-12 ports and addresses
+Const DTS12Port = 1
+Const DTS12Adrs = 0
+Const CS451Port = 1
+Const CS451Adrs = 1
+'Number of CS451 retries if it returns NAN
+Const PTMaxRetries = 3
 EndConstTable
+
+
+Const SITE_CODE As String = "uwrl"
+Const DEVICE_ID As String = "cr350"
+
+'-----------------------------------------------------------
+' Datastream IDs from HydroServer
+'-----------------------------------------------------------
+Const TURB_MEAN_DATASTREAM_ID As String = "01a136fc-527c-7fc1-a588-27493d61c79c"
+Const TURB_VARIANCE_DATASTREAM_ID As String = "01a13705-0d84-7505-b0c5-0255fbed7e69"
+Const TURB_MEDIAN_DATASTREAM_ID As String = "01a136f9-c236-781a-9388-d2ffd36943bc"
+Const TURB_BES_DATASTREAM_ID As String = "01a136fd-dbdb-7317-bab1-d0af9194cdfc"
+Const TURB_MIN_DATASTREAM_ID As String = "01a13706-eedd-7b9a-88bb-03aa0d05f8c8"
+Const TURB_MAX_DATASTREAM_ID As String = "01a13706-17e7-7743-a9ae-14836fce4cfc"
+Const DTS12_WATER_TEMP_DATASTREAM_ID As String = "01a15a1b-96cb-70d2-8396-9a9b462cb18b"
+Const GAGE_HEIGHT_DATASTREAM_ID As String = "01a136f6-f1f4-75b2-a801-f384b3570144"
+Const WATER_TEMP_DATASTREAM_ID As String = "01a13709-6a84-7025-b8ce-7b79f21822a6"
+Const BATTERY_VOLTAGE_DATASTREAM_ID As String = "01a15a13-65e1-7794-868f-f56b9a783273"
+Const N_OBS = 10
 
 '-----------------------------------------------------------
 ' Station health
 '-----------------------------------------------------------
-Public Site As String * 16
 Public BattVolt
 Public Panel_Temp
 
@@ -67,46 +89,25 @@ Public StageNaNCounter As Long
 Units Stage_cm = cm
 Units CS451_Water_Temp = degC
 
-Dim PT_i As Long
-
-'-----------------------------------------------------------
-' MQTT topics and SensorThings Datastream IDs (CR350)
-'-----------------------------------------------------------
-Const N_OBS = 8
-
-Const TURB_MEAN_DATASTREAM_ID As String = "01a136fc-527c-7fc1-a588-27493d61c79c"
-Const TURB_VARIANCE_DATASTREAM_ID As String = "01a13705-0d84-7505-b0c5-0255fbed7e69"
-Const TURB_MEDIAN_DATASTREAM_ID As String = "01a136f9-c236-781a-9388-d2ffd36943bc"
-Const TURB_BES_DATASTREAM_ID As String = "01a136fd-dbdb-7317-bab1-d0af9194cdfc"
-Const TURB_MIN_DATASTREAM_ID As String = "01a13706-eedd-7b9a-88bb-03aa0d05f8c8"
-Const TURB_MAX_DATASTREAM_ID As String = "01a13706-17e7-7743-a9ae-14836fce4cfc"
-Const GAGE_HEIGHT_DATASTREAM_ID As String = "01a136f6-f1f4-75b2-a801-f384b3570144"
-Const WATER_TEMP_DATASTREAM_ID As String = "01a13709-6a84-7025-b8ce-7b79f21822a6"
-
-Public Topic(N_OBS) As String * 64
-Public DatastreamID(N_OBS) As String * 64
-Public ObsValue(N_OBS)
-
-Public dateTime As String * 30
 Public payload As String * 200
+Public dateTime As String * 30
+
+Dim Topic(N_OBS) As String * 64
+Dim DatastreamID(N_OBS) As String * 40
+Dim ObsValue(N_OBS)
+Dim TopicBase As String * 32
 Dim i As Long
+Dim PT_i As Long
 
 '-----------------------------------------------------------
 ' Data Table (one record every 15 minutes)
 '-----------------------------------------------------------
 DataTable(Station_Log, True, -1)
   DataInterval(0, 15, Min, 10)
-  Sample(1, Site, String)
   Sample(1, BattVolt, FP2)
   Sample(1, Panel_Temp, FP2)
-  'DTS-12
-  Sample(8, DTS12_Data(), FP2)
-  'CS451
-  Sample(1, Round(Stage_cm, 2), IEEE4)
-  FieldNames("Stage_cm")
-  Sample(1, Round(CS451_Water_Temp, 2), FP2)
-  FieldNames("CS451_Water_Temp")
-  Sample(1, StageNaNCounter, FP2)
+  Sample(8, DTS12_Data(), IEEE4)
+  Sample(2, CS451_Data(), IEEE4)
 EndTable
 
 '-----------------------------------------------------------
@@ -116,7 +117,6 @@ EndTable
 '-----------------------------------------------------------
 Sub MeasurePT
   StageNaNCounter = 0
-
   For PT_i = 1 To PTMaxRetries
     SDI12Recorder(CS451_Data(), CS451Port, CS451Adrs, "M8!", 1.0, 0)
     If Stage_cm = NAN Then
@@ -132,20 +132,20 @@ EndSub
 '-----------------------------------------------------------
 BeginProg
 
-  'Station name from the Status table (set it in Device Configuration)
-  Site = Status.StationName
-
   'Topic / Datastream lookup tables (index order matches ObsValue)
-  Topic(1) = "uwrl/" + Site + "/dts12/turbmean"     : DatastreamID(1) = TURB_MEAN_DATASTREAM_ID
-  Topic(2) = "uwrl/" + Site + "/dts12/turbvariance" : DatastreamID(2) = TURB_VARIANCE_DATASTREAM_ID
-  Topic(3) = "uwrl/" + Site + "/dts12/turbmedian"   : DatastreamID(3) = TURB_MEDIAN_DATASTREAM_ID
-  Topic(4) = "uwrl/" + Site + "/dts12/turbbes"      : DatastreamID(4) = TURB_BES_DATASTREAM_ID
-  Topic(5) = "uwrl/" + Site + "/dts12/turbmin"      : DatastreamID(5) = TURB_MIN_DATASTREAM_ID
-  Topic(6) = "uwrl/" + Site + "/dts12/turbmax"      : DatastreamID(6) = TURB_MAX_DATASTREAM_ID
-  Topic(7) = "uwrl/" + Site + "/cs451/gageheight"   : DatastreamID(7) = GAGE_HEIGHT_DATASTREAM_ID
-  Topic(8) = "uwrl/" + Site + "/cs451/watertemp"    : DatastreamID(8) = WATER_TEMP_DATASTREAM_ID
+  TopicBase = SITE_CODE + "/" + DEVICE_ID + "/"
 
-  'Scan runs at :00, :15, :30, :45 (scans sync to the logger clock)
+  Topic(1)  = TopicBase + "dts12/averageturbidity"  : DatastreamID(1)  = TURB_MEAN_DATASTREAM_ID
+  Topic(2)  = TopicBase + "dts12/turbidityvariance" : DatastreamID(2)  = TURB_VARIANCE_DATASTREAM_ID
+  Topic(3)  = TopicBase + "dts12/medianturbidity"   : DatastreamID(3)  = TURB_MEDIAN_DATASTREAM_ID
+  Topic(4)  = TopicBase + "dts12/besturbidity"      : DatastreamID(4)  = TURB_BES_DATASTREAM_ID
+  Topic(5)  = TopicBase + "dts12/minturbidity"      : DatastreamID(5)  = TURB_MIN_DATASTREAM_ID
+  Topic(6)  = TopicBase + "dts12/maxturbidity"      : DatastreamID(6)  = TURB_MAX_DATASTREAM_ID
+  Topic(7)  = TopicBase + "dts12/watertemp"         : DatastreamID(7)  = DTS12_WATER_TEMP_DATASTREAM_ID
+  Topic(8)  = TopicBase + "cs451/gageheight"        : DatastreamID(8)  = GAGE_HEIGHT_DATASTREAM_ID
+  Topic(9)  = TopicBase + "cs451/watertemp"         : DatastreamID(9)  = WATER_TEMP_DATASTREAM_ID
+  Topic(10) = TopicBase + "batteryVoltage"          : DatastreamID(10) = BATTERY_VOLTAGE_DATASTREAM_ID
+
   Scan(15, Min, 1, 0)
 
     'Station health
@@ -162,15 +162,17 @@ BeginProg
     CallTable Station_Log
     dateTime = Station_Log.Timestamp(4,1)
 
-    'Values to publish (same order as Topic/DatastreamID)
-    ObsValue(1) = Turb_Mean
-    ObsValue(2) = Turb_Variance
-    ObsValue(3) = Turb_Median
-    ObsValue(4) = Turb_BES
-    ObsValue(5) = Turb_Min
-    ObsValue(6) = Turb_Max
-    ObsValue(7) = Stage_cm
-    ObsValue(8) = CS451_Water_Temp
+    'Values in the same order as the Topic/DatastreamID tables
+    ObsValue(1)  = Turb_Mean
+    ObsValue(2)  = Turb_Variance
+    ObsValue(3)  = Turb_Median
+    ObsValue(4)  = Turb_BES
+    ObsValue(5)  = Turb_Min
+    ObsValue(6)  = Turb_Max
+    ObsValue(7)  = DTS12_Water_Temp
+    ObsValue(8)  = Stage_cm
+    ObsValue(9)  = CS451_Water_Temp
+    ObsValue(10) = BattVolt
 
     'Build and publish one SensorThings Observation per variable
     For i = 1 To N_OBS

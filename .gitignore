@@ -4,3 +4,4 @@
 services/mosquitto/mosquitto.log
 services/hydroserver/hydroserver
 services/hsmqttbridge/data/
+MayflyLogger/*/arduino_secrets.h
