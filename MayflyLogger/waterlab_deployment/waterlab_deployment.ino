@@ -177,7 +177,7 @@ void setup() {
 
   varArray.begin(variableCount, variableList);
   // keep the startup measurement value to 0 on deployment
-  dataLogger.setStartupMeasurements(5);
+  dataLogger.setStartupMeasurements(0);
   dataLogger.begin(loggerID, loggingInterval, &varArray);
   dataLogger.setFileName("waterlab_deployment.csv");
   dataLogger.createLogFile(true);
@@ -204,12 +204,10 @@ void loop() {
     mcuBoard.update();
     ds3231.update();
     dataLogger.logToSD();
-
-    if (!mqttClient.isConnected()) {
-      Serial.println(F("MQTT disconnected, reconnecting..."));
-      if (!modem.isInternetAvailable()) {
+    if (!modem.isInternetAvailable()) {
         Serial.println(modem.connectToInternet(ssid, pass) ? "WiFi OK" : "WiFi FAILED");
-      }
+    }
+    if (!mqttClient.isConnected()) {
       if (!mqttClient.connectToBroker()) {
         Serial.print(F("Broker connect failed, error: "));
         Serial.println(mqttClient.getConnectionError());
